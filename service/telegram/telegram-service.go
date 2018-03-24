@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	. "github.com/zachvanuum/FoodHelperBot/model/telegram"
 	"github.com/zachvanuum/FoodHelperBot/util"
 )
 
