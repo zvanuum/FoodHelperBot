@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -26,7 +25,8 @@ type Services struct {
 }
 
 func main() {
-	telegramToken := getToken()
+	telegramToken := os.Getenv("TELEGRAM_TOKEN")
+	port := os.Getenv("PORT")
 	services := createServices(telegramToken)
 
 	botInfo, err := services.TelegramService.GetMe()
@@ -35,29 +35,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	botServer := createBotServer(services, bot.NewTelegramBot(botInfo))
+	foodBot := bot.NewTelegramBot(botInfo)
+	routes := createRoutes(foodBot)
+	server := createServer(port, routes)
 
-	fmt.Printf("Starting server\n")
+	botServer := createBotServer(services, server, foodBot)
+
+	log.Printf("[main] Starting server\n")
 	log.Fatal(botServer.Server.ListenAndServe())
 }
 
-func getToken() string {
-	var token string
-	flag.StringVar(&token, "token", "", "The bot's token")
-	flag.Parse()
-	return token
-}
-
-func createBotServer(services *Services, foodBot bot.FoodHelperBot) *BotServer {
+func createBotServer(services *Services, server *http.Server, foodBot bot.FoodHelperBot) *BotServer {
 	return &BotServer{
 		Services: services,
 		Bot:      foodBot,
-		Server: &http.Server{
-			Handler:      createRoutes(foodBot),
-			Addr:         "localhost:8080",
-			WriteTimeout: 15 * time.Second,
-			ReadTimeout:  15 * time.Second,
-		},
+		Server:   server,
 	}
 }
 
@@ -73,4 +65,13 @@ func createRoutes(foodBot bot.FoodHelperBot) *mux.Router {
 	r.HandleFunc("/", controller.GreetingHandler(foodBot)).Methods("GET")
 
 	return r
+}
+
+func createServer(port string, routes *mux.Router) *http.Server {
+	return &http.Server{
+		Handler:      routes,
+		Addr:         ":" + port,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
 }
