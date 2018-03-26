@@ -1,11 +1,11 @@
 FROM alpine
 
 ARG TOKEN
-ENV TELEGRAM_TOKEN $TOKEN
 ARG PORT
-ENV PORT $PORT
+ARG CERT
+ARG KEY
 
 WORKDIR /app
 COPY ./FoodHelperBot_unix /app/
 
-CMD ./FoodHelperBot_unix
+CMD ./FoodHelperBot_unix --token=$TOKEN --port=$PORT --cert=$CERT --key=$KEY

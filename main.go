@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -24,10 +25,16 @@ type Services struct {
 	TelegramService service.TelegramService
 }
 
+type Flags struct {
+	TelegramToken string
+	Port          string
+	Cert          string
+	Key           string
+}
+
 func main() {
-	telegramToken := os.Getenv("TELEGRAM_TOKEN")
-	port := os.Getenv("PORT")
-	services := createServices(telegramToken)
+	flags := getFlags()
+	services := createServices(flags.TelegramToken)
 
 	botInfo, err := services.TelegramService.GetMe()
 	if err != nil {
@@ -37,12 +44,37 @@ func main() {
 
 	foodBot := bot.NewTelegramBot(botInfo)
 	routes := createRoutes(foodBot)
-	server := createServer(port, routes)
+	server := createServer(flags.Port, routes)
 
 	botServer := createBotServer(services, server, foodBot)
 
-	log.Printf("[main] Starting server\n")
-	log.Fatal(botServer.Server.ListenAndServe())
+	log.Printf("[main] Starting server on %s\n", flags.Port)
+	if flags.Port == "443" {
+		if flags.Cert == "" || flags.Key == "" {
+			log.Fatal("No SSL certificates were provided, exiting")
+		}
+		log.Fatal(botServer.Server.ListenAndServeTLS(flags.Cert, flags.Key))
+	} else {
+		log.Fatal(botServer.Server.ListenAndServe())
+	}
+}
+
+func getFlags() Flags {
+	var telegramToken string
+	flag.StringVar(&telegramToken, "token", "", "The token used to authenticate with Telegram")
+	var port string
+	flag.StringVar(&port, "port", "8080", "The port to run on")
+	var cert, key string
+	flag.StringVar(&cert, "cert", "", "SSL Certificate")
+	flag.StringVar(&key, "key", "", "Private key")
+	flag.Parse()
+
+	return Flags{
+		TelegramToken: telegramToken,
+		Port:          port,
+		Cert:          cert,
+		Key:           key,
+	}
 }
 
 func createBotServer(services *Services, server *http.Server, foodBot bot.FoodHelperBot) *BotServer {
