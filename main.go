@@ -35,14 +35,7 @@ type Flags struct {
 func main() {
 	flags := getFlags()
 	services := createServices(flags.TelegramToken)
-
-	botInfo, err := services.TelegramService.GetMe()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	foodBot := bot.NewTelegramBot(botInfo)
+	foodBot := setupBot(services.TelegramService)
 	routes := createRoutes(foodBot)
 	server := createServer(flags.Port, routes)
 
@@ -91,10 +84,26 @@ func createServices(telegramToken string) *Services {
 	}
 }
 
+func setupBot(telegramService service.TelegramService) bot.FoodHelperBot {
+	botInfo, err := telegramService.GetMe()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	webhookURL := "https://zvanuum.com/message"
+	if err := telegramService.RegisterWebhook(webhookURL); err != nil {
+		log.Fatalf("Failed to register webhook for bot using url %s", webhookURL)
+	}
+
+	return bot.NewTelegramBot(botInfo)
+}
+
 func createRoutes(foodBot bot.FoodHelperBot) *mux.Router {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", controller.GreetingHandler(foodBot)).Methods("GET")
+	r.HandleFunc("/message", controller.ReceiveMessageHandler()).Methods("POST")
 
 	return r
 }

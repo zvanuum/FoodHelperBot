@@ -3,15 +3,15 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"net/http"
 )
 
-func UnmarshalResponse(res *http.Response, target interface{}) error {
+func UnmarshalResponse(resBody io.ReadCloser, target interface{}) error {
 	var body []byte
 	var err error
 
-	if body, err = ioutil.ReadAll(res.Body); err == nil {
+	if body, err = ioutil.ReadAll(resBody); err == nil {
 		if err2 := json.Unmarshal(body, &target); err2 != nil {
 			return fmt.Errorf("failed unmarshalling response: %s", err2)
 		}

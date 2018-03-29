@@ -11,3 +11,9 @@ type BotInfo struct {
 	Name     string `json:"first_name"`
 	Username string `json:"username"`
 }
+
+type SetWebhookResponse struct {
+	OK          bool   `json:"ok"`
+	Result      bool   `json:"result"`
+	Description string `json:"description"`
+}
