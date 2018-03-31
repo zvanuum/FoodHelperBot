@@ -7,17 +7,17 @@ import (
 	"io/ioutil"
 )
 
-func UnmarshalResponse(resBody io.ReadCloser, target interface{}) error {
-	var body []byte
+func UnmarshalBody(body io.ReadCloser, target interface{}) error {
+	var bodyBytes []byte
 	var err error
 
-	if body, err = ioutil.ReadAll(resBody); err == nil {
-		if err2 := json.Unmarshal(body, &target); err2 != nil {
-			return fmt.Errorf("failed unmarshalling response: %s", err2)
+	if bodyBytes, err = ioutil.ReadAll(body); err == nil {
+		if err2 := json.Unmarshal(bodyBytes, &target); err2 != nil {
+			return fmt.Errorf("failed unmarshalling body: %s", err2)
 		}
 
 		return nil
 	}
 
-	return fmt.Errorf("failed to read response body: %s", err)
+	return fmt.Errorf("failed to read body: %s", err)
 }

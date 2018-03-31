@@ -17,6 +17,7 @@ type foodHelperBot struct {
 }
 
 func NewTelegramBot(info model.BotInfo) FoodHelperBot {
+
 	return &foodHelperBot{
 		ID:       info.ID,
 		Name:     info.Name,
