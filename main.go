@@ -14,10 +14,12 @@ import (
 
 type Services struct {
 	TelegramService service.TelegramService
+	YelpService     service.YelpService
 }
 
 type Flags struct {
 	TelegramToken string
+	YelpKey       string
 	Port          string
 	Cert          string
 	Key           string
@@ -25,7 +27,7 @@ type Flags struct {
 
 func main() {
 	flags := getFlags()
-	services := createServices(flags.TelegramToken)
+	services := createServices(flags.TelegramToken, flags.YelpKey)
 	routes := createRoutes(services)
 	server := createServer(flags.Port, routes)
 
@@ -45,6 +47,8 @@ func main() {
 func getFlags() Flags {
 	var telegramToken string
 	flag.StringVar(&telegramToken, "token", "", "The token used to authenticate with Telegram")
+	var yelpKey string
+	flag.StringVar(&yelpKey, "yelpKey", "", "The API key used to authenticate with Yelp")
 	var port string
 	flag.StringVar(&port, "port", "8080", "The port to run on")
 	var cert, key string
@@ -54,15 +58,20 @@ func getFlags() Flags {
 
 	return Flags{
 		TelegramToken: telegramToken,
+		YelpKey:       yelpKey,
 		Port:          port,
 		Cert:          cert,
 		Key:           key,
 	}
 }
 
-func createServices(telegramToken string) *Services {
+func createServices(telegramToken string, yelpKey string) *Services {
+	yelpService := service.NewYelpService(yelpKey)
+	telegramService := service.NewTelegramService(telegramToken, yelpService)
+
 	return &Services{
-		TelegramService: service.NewTelegramService(telegramToken),
+		TelegramService: telegramService,
+		YelpService:     yelpService,
 	}
 }
 

@@ -17,7 +17,6 @@ type foodHelperBot struct {
 }
 
 func NewTelegramBot(info model.BotInfo) FoodHelperBot {
-
 	return &foodHelperBot{
 		ID:       info.ID,
 		Name:     info.Name,
@@ -26,5 +25,5 @@ func NewTelegramBot(info model.BotInfo) FoodHelperBot {
 }
 
 func (bot foodHelperBot) Greeting() string {
-	return fmt.Sprintf("Hello, my name is %s. You can contact me by messaging @%s.\n", bot.Name, bot.Username)
+	return fmt.Sprintf("Hello, my name is %s. You can contact me by messaging @%s.", bot.Name, bot.Username)
 }

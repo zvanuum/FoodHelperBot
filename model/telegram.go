@@ -31,6 +31,7 @@ type MessageInfo struct {
 	Text        string        `json:"text"`
 	ForwardFrom ForwarderInfo `json:"forward_from,omitempty"`
 	ForwardDate int64         `json:"forward_date,omitempty"`
+	Location    LatLon        `json:"location"`
 }
 
 type ChatInfo struct {
@@ -65,4 +66,34 @@ type SendMessageResult struct {
 	Chat      ChatInfo `json:"chat"`
 	Date      int64    `json:"date"`
 	Text      string   `json:"text"`
+}
+
+type Message struct {
+	ChatID                int64       `json:"chat_id"`
+	Text                  string      `json:"text"`
+	ParseMode             string      `json:"parse_mode,omitempty"`
+	DisableWebPagePreview bool        `json:"disable_web_page_preview,omitempty"`
+	DisableNotification   bool        `json:"disalbe_notification,omitempty"`
+	ReplyToMessageID      int64       `json:"reply_to_message_id,omitempty "`
+	ReplyMarkup           ReplyMarkup `json:"reply_markup,omitempty"`
+}
+
+func NewMessage(chatID int64, text string) Message {
+	return Message{
+		ChatID: chatID,
+		Text:   text,
+	}
+}
+
+type ReplyMarkup struct {
+	Keyboard        [][]KeyboardButton `json:"keyboard"`
+	ResizeKeyboard  bool               `json:"resize_keyboard,omitempty"`
+	OneTimeKeyboard bool               `json:"one_time_keyboard,omitempty"`
+	Selective       bool               `json:"selective,omitempty"`
+}
+
+type KeyboardButton struct {
+	Text            string `json:"text"`
+	RequestContact  bool   `json:"request_contact,omitempty"`
+	RequestLocation bool   `json:"request_location,omitempty"`
 }
