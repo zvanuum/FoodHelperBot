@@ -19,13 +19,11 @@ func ReceiveMessageHandler(svc service.TelegramService) func(w http.ResponseWrit
 		}
 
 		log.Printf(
-			"[ReceiveMessageHandler] Got message - chat ID: %d, message ID: %d, user ID: %d, text: \"%s\", location: %f, %f",
+			"[ReceiveMessageHandler] Got message - chat ID: %d, message ID: %d, user ID: %d, text: \"%s\"",
 			message.Message.Chat.ID,
 			message.Message.MessageID,
 			message.Message.From.ID,
 			message.Message.Text,
-			message.Message.Location.Latitude,
-			message.Message.Location.Longitude,
 		)
 
 		if err := svc.RespondToMessage(message); err != nil {

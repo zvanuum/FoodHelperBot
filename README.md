@@ -3,8 +3,8 @@
 A Telegram bot for for finding food suggestions on Yelp
 
 TODO  
-really refactor the way messages are parsed & responded to, take behavior out of telegram service and add to bot 
-then need a small db or in-memory cache to remember different users and points in their sessions  
 real config files w/ viper  
+figure out how to present search results to user in Telegram  
 figure out how to use yelp api  
+random suggestion feature?
 systemd or supervisor on ec2 server  

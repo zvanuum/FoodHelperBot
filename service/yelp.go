@@ -11,7 +11,8 @@ import (
 )
 
 type YelpService interface {
-	Search(term string) (model.SearchResponse, error)
+	SearchByLocation(term string, location string) (model.SearchResponse, error)
+	SearchByCoordinates(term string, latitude float64, longitude float64) (model.SearchResponse, error)
 }
 
 type yelpService struct {
@@ -24,33 +25,66 @@ func NewYelpService(apiKey string) YelpService {
 	}
 }
 
-func (svc yelpService) Search(term string) (model.SearchResponse, error) {
-	var searchResponse model.SearchResponse
-
-	location := "Phoenix, AZ"
+func (svc yelpService) SearchByLocation(term string, location string) (model.SearchResponse, error) {
 	searchURL := fmt.Sprintf(
 		"https://api.yelp.com/v3/businesses/search?term=%s&location=%s",
 		url.QueryEscape(term),
 		url.QueryEscape(location),
 	)
 
-	log.Printf("[Search] Search request to Yelp: %s", searchURL)
+	return svc.search(searchURL)
+}
 
-	req, err := http.NewRequest("GET", searchURL, nil)
-	if err != nil {
-		return searchResponse, fmt.Errorf("[Search] failed to create GET request for /businesses/search bot, %s", err.Error())
-	}
-	addBearerToken(req, svc.APIKey)
+func (svc yelpService) SearchByCoordinates(term string, latitude float64, longitude float64) (model.SearchResponse, error) {
+	searchURL := fmt.Sprintf(
+		"https://api.yelp.com/v3/businesses/search?term=%s&latitude=%f&longitude=%f",
+		url.QueryEscape(term),
+		latitude,
+		longitude,
+	)
 
-	client := &http.Client{}
-	res, err := client.Do(req)
+	return svc.search(searchURL)
+}
+
+func (svc yelpService) search(url string) (model.SearchResponse, error) {
+	res, err := doSearchRequest(url, svc.APIKey)
 	if err != nil {
-		return searchResponse, fmt.Errorf("failed to do GET request to %s: %s", req.URL.RawPath, err.Error())
+		return model.SearchResponse{}, err
 	}
 
 	defer res.Body.Close()
 
-	log.Printf("[Search] Response status: %s", res.Status)
+	log.Printf("[SearchByCoordinates] Response status: %s", res.Status)
+
+	searchResponse, err := handleSearchResponse(res)
+
+	return searchResponse, nil
+}
+
+func doSearchRequest(url string, key string) (*http.Response, error) {
+	log.Printf("[doSearchRequest] Search request to Yelp: %s", url)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("[doSearchRequest] failed to create GET request for /businesses/search bot, %s", err.Error())
+	}
+	addBearerToken(req, key)
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to do GET request to %s: %s", req.URL.RawPath, err.Error())
+	}
+
+	return res, nil
+}
+
+func addBearerToken(req *http.Request, token string) {
+	req.Header.Set("Authorization", "Bearer "+token)
+}
+
+func handleSearchResponse(res *http.Response) (model.SearchResponse, error) {
+	var searchResponse model.SearchResponse
 
 	if err := util.UnmarshalBody(res.Body, &searchResponse); err != nil {
 		return searchResponse, fmt.Errorf("failed to marshall search response to struct: %s", err.Error())
@@ -70,8 +104,4 @@ func (svc yelpService) Search(term string) (model.SearchResponse, error) {
 	}
 
 	return searchResponse, nil
-}
-
-func addBearerToken(req *http.Request, token string) {
-	req.Header.Set("Authorization", "Bearer "+token)
 }

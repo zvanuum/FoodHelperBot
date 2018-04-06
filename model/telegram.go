@@ -31,7 +31,7 @@ type MessageInfo struct {
 	Text        string        `json:"text"`
 	ForwardFrom ForwarderInfo `json:"forward_from,omitempty"`
 	ForwardDate int64         `json:"forward_date,omitempty"`
-	Location    LatLon        `json:"location"`
+	Location    Coordinates   `json:"location"`
 }
 
 type ChatInfo struct {
@@ -78,8 +78,8 @@ type Message struct {
 	ReplyMarkup           ReplyMarkup `json:"reply_markup,omitempty"`
 }
 
-func NewMessage(chatID int64, text string) Message {
-	return Message{
+func NewMessage(chatID int64, text string) *Message {
+	return &Message{
 		ChatID: chatID,
 		Text:   text,
 	}

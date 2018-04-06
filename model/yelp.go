@@ -7,20 +7,20 @@ type SearchResponse struct {
 }
 
 type Business struct {
-	Rating       float32    `json:"rating"`
-	Price        string     `json:"price"`
-	Phone        string     `json:"phone"`
-	ID           string     `json:"id"`
-	IsClosed     bool       `json:"is_closed"`
-	Categories   []Category `json:"categories"`
-	ReviewCount  int        `json:"review_count"`
-	Name         string     `json:"name"`
-	URL          string     `json:"url"`
-	Coordinates  LatLon     `json:"coordinates"`
-	ImageURL     string     `json:"image_url"`
-	Location     Location   `json:"location"`
-	Distance     float32    `json:"distance"`
-	Transactions []string   `json:"transactions"`
+	Rating       float32     `json:"rating"`
+	Price        string      `json:"price"`
+	Phone        string      `json:"phone"`
+	ID           string      `json:"id"`
+	IsClosed     bool        `json:"is_closed"`
+	Categories   []Category  `json:"categories"`
+	ReviewCount  int         `json:"review_count"`
+	Name         string      `json:"name"`
+	URL          string      `json:"url"`
+	Coordinates  Coordinates `json:"coordinates"`
+	ImageURL     string      `json:"image_url"`
+	Location     Location    `json:"location"`
+	Distance     float32     `json:"distance"`
+	Transactions []string    `json:"transactions"`
 }
 
 type Category struct {
@@ -39,7 +39,7 @@ type Location struct {
 }
 
 type Region struct {
-	Center LatLon `json:"center"`
+	Center Coordinates `json:"center"`
 }
 
 type ErrorResponseWrapper struct {

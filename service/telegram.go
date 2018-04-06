@@ -8,9 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 
-	"github.com/zachvanuum/FoodHelperBot/bot"
 	"github.com/zachvanuum/FoodHelperBot/model"
 	"github.com/zachvanuum/FoodHelperBot/util"
 )
@@ -24,7 +22,7 @@ type TelegramService interface {
 type telegramService struct {
 	Token       string
 	YelpService YelpService
-	FoodBot     bot.FoodHelperBot
+	BotService  BotService
 }
 
 func NewTelegramService(token string, yelpService YelpService) TelegramService {
@@ -33,13 +31,13 @@ func NewTelegramService(token string, yelpService YelpService) TelegramService {
 		YelpService: yelpService,
 	}
 
-	foodBot := service.setupBot()
-	service.FoodBot = foodBot
+	botService := service.setupBotService()
+	service.BotService = botService
 
 	return service
 }
 
-func (svc telegramService) setupBot() bot.FoodHelperBot {
+func (svc telegramService) setupBotService() BotService {
 	botInfo, err := svc.GetMe()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -51,7 +49,7 @@ func (svc telegramService) setupBot() bot.FoodHelperBot {
 		log.Fatalf("[setupBot] Failed to register webhook for bot using url %s", webhookURL)
 	}
 
-	return bot.NewTelegramBot(botInfo)
+	return NewTelegramBot(botInfo, svc.YelpService)
 }
 
 func (svc telegramService) GetMe() (model.BotInfo, error) {
@@ -113,47 +111,46 @@ func (svc telegramService) RegisterWebhook(url string) error {
 }
 
 func (svc telegramService) RespondToMessage(message model.ReceivedMessage) error {
-	responseMessage := svc.createResponseMessage(message.Message.Text)
+	responseMessage := svc.BotService.CreateResponseMessage(message)
 
 	log.Printf(
 		"[RespondToMessage] Response message - chat ID: %d, message ID: %d, user ID: %d, text: \"%s\"",
 		message.Message.Chat.ID,
 		message.Message.MessageID,
 		message.Message.From.ID,
-		responseMessage,
+		responseMessage.Text,
 	)
 
-	locationRequest := model.NewMessage(message.Message.Chat.ID, responseMessage)
-	locationRequest.ReplyMarkup = model.ReplyMarkup{
-		Keyboard: [][]model.KeyboardButton{
-			[]model.KeyboardButton{
-				model.KeyboardButton{
-					Text:            "Provide Location",
-					RequestLocation: true,
-				},
-			},
-		},
-		ResizeKeyboard: true,
+	var sendMessageURL string
+	var req *http.Request
+	var err error
+	if len(responseMessage.ReplyMarkup.Keyboard) > 0 {
+		postBody, err := json.Marshal(responseMessage)
+		if err != nil {
+			return fmt.Errorf("failed to marshal struct %v to json: %s", responseMessage, err.Error())
+		}
+
+		sendMessageURL = fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", svc.Token)
+		req, err = http.NewRequest("POST", sendMessageURL, bytes.NewBuffer(postBody))
+		if err != nil {
+			return fmt.Errorf("failed to make POST request to %s: %s", sendMessageURL, err.Error())
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+	} else {
+		sendMessageURL = formatSendMessageURL(svc.Token, responseMessage.ChatID, responseMessage.Text)
+		req, err = http.NewRequest("GET", sendMessageURL, nil)
+		if err != nil {
+			return fmt.Errorf("failed to make GET request to %s: %s", sendMessageURL, err.Error())
+		}
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
-
-	postBody, err := json.Marshal(locationRequest)
-	if err != nil {
-		return fmt.Errorf("failed to marshal struct %v to json: %s", locationRequest, err.Error())
-	}
-
-	sendMessageURL := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", svc.Token)
-	req, err := http.NewRequest("POST", sendMessageURL, bytes.NewBuffer(postBody))
-
-	if err != nil {
-		return fmt.Errorf("failed to make GET request to %s: %s", sendMessageURL, err.Error())
-	}
-
-	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to do POST request to %s: %s", sendMessageURL, err.Error())
+		return fmt.Errorf("failed to do request to %s: %s", sendMessageURL, err.Error())
 	}
 
 	defer res.Body.Close()
@@ -173,35 +170,7 @@ func (svc telegramService) RespondToMessage(message model.ReceivedMessage) error
 	return nil
 }
 
-func (svc telegramService) createResponseMessage(text string) string {
-	splitText := strings.Split(text, " ")
-	command := splitText[0]
-	remaining := strings.Join(splitText[1:len(splitText)], " ")
-
-	log.Printf("[createResponseMessage] User query: %s, remaining text: %s", command, remaining)
-
-	if !strings.Contains(command, "/") {
-		return "Valid queries start with \"/\", for example \"/search <term>\" will search for businesses near you."
-	}
-
-	if command == "/start" || command == "/help" {
-		return svc.FoodBot.Greeting()
-	}
-
-	if command == "/search" {
-		searchResults, err := svc.YelpService.Search(remaining)
-		if err != nil {
-			log.Printf("[createResponseMessage] %s", err.Error())
-			return "Sorry, I was unable to perform that search."
-		}
-
-		return fmt.Sprintf("Found %d businesses near you.", searchResults.Total)
-	}
-
-	return "Sorry, but I don't know how to answer that query."
-}
-
-func createSendMessageURL(token string, chatId int64, responseText string) string {
+func formatSendMessageURL(token string, chatId int64, responseText string) string {
 	return fmt.Sprintf(
 		"https://api.telegram.org/bot%s/sendMessage?chat_id=%d&text=%s",
 		token,
