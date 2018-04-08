@@ -3,7 +3,10 @@ package service
 import (
 	"fmt"
 	"log"
+	"math"
+	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/zachvanuum/FoodHelperBot/model"
 )
@@ -25,9 +28,8 @@ const (
 		"/search <cuisine/business> nearby/near me", and
 		"/random"
 	To see these again send "/start" or "/help".`
-	LocationResponse     = "Please provide your location so that I can search for businesses near you."
-	searchResponseFormat = "Found %d businesses near you."
-	ThanksResponse       = "Thank you!"
+	LocationResponse = "Please provide your location so that I can search for businesses near you."
+	ThanksResponse   = "Thank you!"
 
 	LocationKeyboardText = "Provide Location"
 
@@ -89,14 +91,19 @@ func (svc botService) CreateResponseMessage(message model.ReceivedMessage) *mode
 
 			response.Text = FailedResponse
 		} else {
-			response.Text = createSearchResponse(searchResults.Total)
+			svc.createSearchResponse(response, searchResults)
 		}
 	case RandomCommand:
-
+		addLocationKeyboardMarkup(response)
+		response.Text = LocationResponse
+		svc.updateUserLastSearchTerm(message.Message.Chat.ID, getRandomCuisine())
 	default:
-		if isProvidingLocation(message) && svc.UsersCache[message.Message.Chat.ID].LastCommand == SearchCommand {
-			log.Printf("[createResponseMessage] Got user's location - Chat ID: %d, Location: %f, %f",
+		if isProvidingLocation(message) &&
+			svc.UsersCache[message.Message.Chat.ID].LastCommand == SearchCommand ||
+			svc.UsersCache[message.Message.Chat.ID].LastCommand == RandomCommand {
+			log.Printf("[createResponseMessage] Got user's location - Chat ID: %d, Message ID: %d, Location: %f, %f",
 				message.Message.Chat.ID,
+				message.Message.MessageID,
 				message.Message.Location.Latitude,
 				message.Message.Location.Longitude,
 			)
@@ -107,7 +114,7 @@ func (svc botService) CreateResponseMessage(message model.ReceivedMessage) *mode
 
 				response.Text = FailedResponse
 			} else {
-				response.Text = createSearchResponse(searchResults.Total)
+				svc.createSearchResponse(response, searchResults)
 			}
 
 			break
@@ -122,6 +129,7 @@ func (svc botService) CreateResponseMessage(message model.ReceivedMessage) *mode
 
 	svc.updateUserLastCommand(message.Message.Chat.ID, command)
 
+	response.ReplyToMessageID = message.Message.MessageID
 	return response
 }
 
@@ -211,8 +219,47 @@ func getUserSepcifiedSearchLocation(text string) string {
 	return location
 }
 
-func createSearchResponse(resultCount int) string {
-	return fmt.Sprintf(searchResponseFormat, resultCount)
+func (svc botService) createSearchResponse(response *model.Message, result model.SearchResponse) {
+	response.ParseMode = "Markdown"
+	response.ReplyMarkup.Keyboard = [][]model.KeyboardButton{}
+
+	showCount := 10
+	if result.Total < 10 {
+		showCount = result.Total
+	}
+
+	responseString := fmt.Sprintf(
+		"Got %d results searching for %s, here are the top %d!\n\n",
+		result.Total,
+		svc.UsersCache[response.ChatID].LastSearchTerm,
+		showCount,
+	)
+
+	for i, business := range result.Businesses[0:showCount] {
+		businessStr := fmt.Sprintf(
+			"[%d: %s](%s)\n%s, %s\n%s\n\n",
+			i+1,
+			business.Name,
+			business.URL,
+			getStars(business.Rating, business.ReviewCount),
+			business.Price,
+			business.Location.Address1,
+		)
+
+		responseString += businessStr
+	}
+
+	response.Text = responseString
+}
+
+func getStars(rating float64, reviewCount int) string {
+	var stars string
+
+	for i := 0; i < int(math.Round(rating)); i++ {
+		stars += "⭐️"
+	}
+
+	return fmt.Sprintf("%s (%.2f, %d reviews)", stars, rating, reviewCount)
 }
 
 func isProvidingLocation(message model.ReceivedMessage) bool {
@@ -233,4 +280,20 @@ func addLocationKeyboardMarkup(message *model.Message) {
 		},
 		ResizeKeyboard: true,
 	}
+}
+
+func getRandomCuisine() string {
+	possibilities := []string{
+		"mexican", "indian", "breakfast", "cafe", "seafood",
+		"chinese", "japanese", "thai", "vietnamese", "ethiopian",
+		"american", "burgers", "gastropub", "sandwiches", "filipino",
+		"ramen", "pho", "french", "greek", "german",
+		"moroccan", "soul food", "cajun", "carribean",
+		"turkish", "spanish", "italian", "korean", "lebanese",
+		"hawaiian", "jamaican", "brazillian", "british", "mediterranean",
+	}
+
+	rand.Seed(time.Now().Unix())
+
+	return possibilities[rand.Intn(len(possibilities)-1)]
 }

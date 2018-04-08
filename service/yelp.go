@@ -58,7 +58,7 @@ func (svc yelpService) search(url string) (model.SearchResponse, error) {
 
 	searchResponse, err := handleSearchResponse(res)
 
-	return searchResponse, nil
+	return filterClosedResults(searchResponse), nil
 }
 
 func doSearchRequest(url string, key string) (*http.Response, error) {
@@ -104,4 +104,26 @@ func handleSearchResponse(res *http.Response) (model.SearchResponse, error) {
 	}
 
 	return searchResponse, nil
+}
+
+func filterClosedResults(results model.SearchResponse) model.SearchResponse {
+	filtered := model.SearchResponse{
+		Region:     results.Region,
+		Businesses: []model.Business{},
+	}
+
+	var closedCount int
+	for _, business := range results.Businesses {
+		if business.IsClosed {
+			closedCount++
+		} else {
+			filtered.Businesses = append(filtered.Businesses, business)
+		}
+	}
+
+	filtered.Total = results.Total - closedCount
+
+	log.Printf("[filterClosedResults] Filtered %d closed businesses", closedCount)
+
+	return filtered
 }

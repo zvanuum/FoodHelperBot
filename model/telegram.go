@@ -56,8 +56,9 @@ type ForwarderInfo struct {
 }
 
 type SendMessageResponse struct {
-	OK     bool              `json:"ok"`
-	Result SendMessageResult `json:"result"`
+	OK          bool              `json:"ok"`
+	Result      SendMessageResult `json:"result"`
+	Description string            `json:"description,omitempty"`
 }
 
 type SendMessageResult struct {

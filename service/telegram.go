@@ -40,7 +40,7 @@ func NewTelegramService(token string, yelpService YelpService) TelegramService {
 func (svc telegramService) setupBotService() BotService {
 	botInfo, err := svc.GetMe()
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Printf("[setupBotService] Failed to get bot information: %s", err.Error())
 		os.Exit(1)
 	}
 
@@ -124,7 +124,7 @@ func (svc telegramService) RespondToMessage(message model.ReceivedMessage) error
 	var sendMessageURL string
 	var req *http.Request
 	var err error
-	if len(responseMessage.ReplyMarkup.Keyboard) > 0 {
+	if len(responseMessage.ReplyMarkup.Keyboard) > 0 || responseMessage.ParseMode != "" {
 		postBody, err := json.Marshal(responseMessage)
 		if err != nil {
 			return fmt.Errorf("failed to marshal struct %v to json: %s", responseMessage, err.Error())
@@ -164,7 +164,7 @@ func (svc telegramService) RespondToMessage(message model.ReceivedMessage) error
 
 	log.Printf("[RespondToMessage] /sendMessage response succeeded: %t.\n", sendMessageResponse.OK)
 	if !sendMessageResponse.OK {
-		return fmt.Errorf("failed to send message")
+		return fmt.Errorf("failed to send message, %s", sendMessageResponse.Description)
 	}
 
 	return nil

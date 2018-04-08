@@ -33,9 +33,11 @@ func main() {
 
 	log.Printf("[main] Starting server on %s\n", flags.Port)
 
-	if flags.Port == "443" {
-		if flags.Cert == "" || flags.Key == "" {
-			log.Fatal("No SSL certificates were provided, exiting")
+	if flags.Cert != "" || flags.Key != "" {
+		if flags.Cert == "" {
+			log.Fatal("[main] Missing certificate, exiting")
+		} else if flags.Key == "" {
+			log.Fatal("[main] Missing key, exiting")
 		}
 
 		log.Fatal(server.ListenAndServeTLS(flags.Cert, flags.Key))

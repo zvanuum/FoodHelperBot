@@ -27,7 +27,7 @@ func ReceiveMessageHandler(svc service.TelegramService) func(w http.ResponseWrit
 		)
 
 		if err := svc.RespondToMessage(message); err != nil {
-			log.Printf(err.Error())
+			log.Printf("[ReceiveMessageHandler] Error responding to message: %s", err.Error())
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}
 

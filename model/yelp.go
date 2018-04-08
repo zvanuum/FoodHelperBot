@@ -7,7 +7,7 @@ type SearchResponse struct {
 }
 
 type Business struct {
-	Rating       float32     `json:"rating"`
+	Rating       float64     `json:"rating"`
 	Price        string      `json:"price"`
 	Phone        string      `json:"phone"`
 	ID           string      `json:"id"`
