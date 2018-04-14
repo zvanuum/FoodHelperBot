@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/spf13/viper"
 
 	"github.com/zachvanuum/FoodHelperBot/handler"
 	"github.com/zachvanuum/FoodHelperBot/service"
@@ -18,16 +19,21 @@ type Services struct {
 }
 
 type Flags struct {
-	TelegramToken string
-	YelpKey       string
-	Port          string
-	Cert          string
-	Key           string
+	Config string
+	Port   string
+	Cert   string
+	Key    string
 }
 
 func main() {
 	flags := getFlags()
-	services := createServices(flags.TelegramToken, flags.YelpKey)
+
+	viper.SetConfigFile(flags.Config)
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("[main] Fatal error config file: %s \n", err.Error())
+	}
+
+	services := createServices(viper.GetString("telegram_key"), viper.GetString("yelp_key"))
 	routes := createRoutes(services)
 	server := createServer(flags.Port, routes)
 
@@ -47,23 +53,18 @@ func main() {
 }
 
 func getFlags() Flags {
-	var telegramToken string
-	flag.StringVar(&telegramToken, "token", "", "The token used to authenticate with Telegram")
-	var yelpKey string
-	flag.StringVar(&yelpKey, "yelpKey", "", "The API key used to authenticate with Yelp")
-	var port string
+	var config, port, cert, key string
+	flag.StringVar(&config, "config", "./config.json", "The server configuration file")
 	flag.StringVar(&port, "port", "8080", "The port to run on")
-	var cert, key string
 	flag.StringVar(&cert, "cert", "", "SSL Certificate")
 	flag.StringVar(&key, "key", "", "Private key")
 	flag.Parse()
 
 	return Flags{
-		TelegramToken: telegramToken,
-		YelpKey:       yelpKey,
-		Port:          port,
-		Cert:          cert,
-		Key:           key,
+		Config: config,
+		Port:   port,
+		Cert:   cert,
+		Key:    key,
 	}
 }
 

@@ -75,7 +75,7 @@ type Message struct {
 	ParseMode             string      `json:"parse_mode,omitempty"`
 	DisableWebPagePreview bool        `json:"disable_web_page_preview,omitempty"`
 	DisableNotification   bool        `json:"disalbe_notification,omitempty"`
-	ReplyToMessageID      int64       `json:"reply_to_message_id,omitempty "`
+	ReplyToMessageID      int64       `json:"reply_to_message_id,omitempty"`
 	ReplyMarkup           ReplyMarkup `json:"reply_markup,omitempty"`
 }
 

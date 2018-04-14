@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/spf13/viper"
 	"github.com/zachvanuum/FoodHelperBot/model"
 	"github.com/zachvanuum/FoodHelperBot/util"
 )
@@ -16,18 +17,21 @@ type YelpService interface {
 }
 
 type yelpService struct {
-	APIKey string
+	APIKey  string
+	BaseURL string
 }
 
 func NewYelpService(apiKey string) YelpService {
 	return yelpService{
-		APIKey: apiKey,
+		APIKey:  apiKey,
+		BaseURL: viper.GetString("yelp.base_url"),
 	}
 }
 
 func (svc yelpService) SearchByLocation(term string, location string) (model.SearchResponse, error) {
+	yelpURL := svc.BaseURL + viper.GetString("yelp.endpoints.business_search") + "?term=%s&location=%s"
 	searchURL := fmt.Sprintf(
-		"https://api.yelp.com/v3/businesses/search?term=%s&location=%s",
+		yelpURL,
 		url.QueryEscape(term),
 		url.QueryEscape(location),
 	)
@@ -36,8 +40,9 @@ func (svc yelpService) SearchByLocation(term string, location string) (model.Sea
 }
 
 func (svc yelpService) SearchByCoordinates(term string, latitude float64, longitude float64) (model.SearchResponse, error) {
+	yelpURL := svc.BaseURL + viper.GetString("yelp.endpoints.business_search") + "?term=%s&latitude=%f&longitude=%f"
 	searchURL := fmt.Sprintf(
-		"https://api.yelp.com/v3/businesses/search?term=%s&latitude=%f&longitude=%f",
+		yelpURL,
 		url.QueryEscape(term),
 		latitude,
 		longitude,

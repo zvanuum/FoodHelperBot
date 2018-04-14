@@ -1,0 +1,19 @@
+{
+    "telegram_key": "",
+    "yelp_key": "",
+    "self_webhook_url": "https://mysite.com/message",
+    "telegram": {
+        "base_url_fmt": "https://api.telegram.org/bot%s",
+        "endpoints": {
+            "get_me": "/getMe",
+            "set_webhook_fmt": "/setWebhook?url=%s",
+            "send_message": "/sendMessage"
+        }
+    },
+    "yelp": {
+        "base_url": "https://api.yelp.com/v3",
+        "endpoints": {
+            "business_search": "/businesses/search"
+        }
+    }
+}

@@ -25,8 +25,7 @@ build-linux:
 docker-build:
 		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_UNIX) -v ./main.go && \
 		docker build \
-		--build-arg TOKEN=${TELEGRAM_TOKEN} \
-		--build-arg YELP=${YELP_KEY} \
+		--build-arg CONFIG=${./config.json} \
 		--build-arg PORT=${PORT} \
 		--build-arg CERT=${CERT} \
 		--build-arg KEY=${KEY} \

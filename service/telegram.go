@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/spf13/viper"
 	"github.com/zachvanuum/FoodHelperBot/model"
 	"github.com/zachvanuum/FoodHelperBot/util"
 )
@@ -44,7 +45,7 @@ func (svc telegramService) setupBotService() BotService {
 		os.Exit(1)
 	}
 
-	webhookURL := "https://zvanuum.com/message"
+	webhookURL := viper.GetString("self_webhook_url")
 	if err := svc.RegisterWebhook(webhookURL); err != nil {
 		log.Fatalf("[setupBot] Failed to register webhook for bot using url %s", webhookURL)
 	}
@@ -56,7 +57,8 @@ func (svc telegramService) GetMe() (model.BotInfo, error) {
 	var botInfo model.BotInfo
 	var err error
 
-	res, err := http.Get(fmt.Sprintf("https://api.telegram.org/bot%s/getMe", svc.Token))
+	url := viper.GetString("telegram.base_url_fmt") + viper.GetString("telegram.endpoints.get_me")
+	res, err := http.Get(fmt.Sprintf(url, svc.Token))
 	if err != nil {
 		return botInfo, fmt.Errorf("failed to get bot, %s", err.Error())
 	}
@@ -83,7 +85,8 @@ func (svc telegramService) GetMe() (model.BotInfo, error) {
 }
 
 func (svc telegramService) RegisterWebhook(url string) error {
-	telegramURL := fmt.Sprintf("https://api.telegram.org/bot%s/setWebhook?url=%s", svc.Token, url)
+	telegramURLFormat := viper.GetString("telegram.base_url_fmt") + viper.GetString("telegram.endpoints.set_webhook_fmt")
+	telegramURL := fmt.Sprintf(telegramURLFormat, svc.Token, url)
 
 	res, err := http.Post(telegramURL, "", nil)
 	if err != nil {
@@ -130,7 +133,8 @@ func (svc telegramService) RespondToMessage(message model.ReceivedMessage) error
 			return fmt.Errorf("failed to marshal struct %v to json: %s", responseMessage, err.Error())
 		}
 
-		sendMessageURL = fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", svc.Token)
+		messagePostURL := viper.GetString("telegram.base_url_fmt") + viper.GetString("telegram.endpoints.send_message")
+		sendMessageURL = fmt.Sprintf(messagePostURL, svc.Token)
 		req, err = http.NewRequest("POST", sendMessageURL, bytes.NewBuffer(postBody))
 		if err != nil {
 			return fmt.Errorf("failed to make POST request to %s: %s", sendMessageURL, err.Error())
@@ -139,6 +143,7 @@ func (svc telegramService) RespondToMessage(message model.ReceivedMessage) error
 		req.Header.Set("Content-Type", "application/json")
 	} else {
 		sendMessageURL = formatSendMessageURL(svc.Token, responseMessage.ChatID, responseMessage.Text)
+		fmt.Printf("\n!!!\n%s\n!!!\n", sendMessageURL)
 		req, err = http.NewRequest("GET", sendMessageURL, nil)
 		if err != nil {
 			return fmt.Errorf("failed to make GET request to %s: %s", sendMessageURL, err.Error())
@@ -171,8 +176,11 @@ func (svc telegramService) RespondToMessage(message model.ReceivedMessage) error
 }
 
 func formatSendMessageURL(token string, chatId int64, responseText string) string {
+	sendMessageURL := viper.GetString("telegram.base_url_fmt") + viper.GetString("telegram.endpoints.send_message") + "?chat_id=%d&text=%s"
+
+	fmt.Printf("\n???\n%s\n???\n", sendMessageURL)
 	return fmt.Sprintf(
-		"https://api.telegram.org/bot%s/sendMessage?chat_id=%d&text=%s",
+		sendMessageURL,
 		token,
 		chatId,
 		url.QueryEscape(responseText),
